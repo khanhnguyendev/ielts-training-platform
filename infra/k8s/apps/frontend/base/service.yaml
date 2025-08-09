@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ielts-frontend
+  namespace: ielts-frontend
+spec:
+  selector: { app: ielts-frontend }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
