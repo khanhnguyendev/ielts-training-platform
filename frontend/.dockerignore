@@ -1,0 +1,24 @@
+# dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# build output
+.next
+out
+dist
+
+# local env files
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+.vscode
+.idea
+*.swp
+
+
