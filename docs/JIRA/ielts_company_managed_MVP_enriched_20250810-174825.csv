@@ -1,0 +1,304 @@
+Issue ID,Work Type,Summary,Description,Parent ID,Status,Priority,Labels,Components
+1000,Epic,"Frontend (Next.js, TS, App Router)","# Requirements
+- Next.js 14+ (App Router), TypeScript strict
+- Pages: Landing, Login/Register, Start Test (Part 1–3), Score
+- API SDK from Gateway OpenAPI
+- Audio recording & upload via S3 presigned URL
+- Healthcheck at `/api/health`, containerized and deployable
+
+# Acceptance Criteria
+- All pages render; `/api/health` returns 200
+- Score page shows 4 bands + overall (mock OK for MVP)
+- Audio can be recorded and uploaded, then played back
+- Docker image builds; K8s manifests deploy; probes green
+
+# Notes
+Use React Hook Form + Zod for forms; SWR/React Query for data fetching.",,To Do,Medium,"frontend,nextjs",frontend
+1100,Epic,"Gateway (Spring Boot, REST→gRPC)","# Requirements
+- Spring Boot 3 project, OpenAPI via springdoc
+- Expose `/v1/answers/score` and `/v1/answers/correct`
+- Resilience4j timeouts/retries/bulkheads
+- gRPC clients to Python AI services
+- Micrometer + Prometheus; OTEL tracing
+
+# Acceptance Criteria
+- OpenAPI served at `/v3/api-docs` and `/swagger-ui`
+- Endpoints proxy to AI services with timeouts + retry=1
+- Actuator `/health` and `/metrics` work
+- Errors mapped to 4xx/5xx correctly",,To Do,Medium,"gateway,java,grpc,openapi",gateway
+1200,Epic,"Core Services (Auth, CMS, Exam, Analytics)","# Requirements
+- Auth: JWT register/login; profile endpoints; Flyway migrations
+- CMS: CRUD questions (Part 1–3) + vocab; seed data
+- Exam: State machine P1/P2/P3; timers; events to queue
+- Analytics: ingest FE/BE events; simple reports
+
+# Acceptance Criteria
+- Auth tokens verified via Gateway middleware
+- CMS returns questions filtered by Part
+- Exam sessions persist + can resume
+- Analytics can return user progress stats",,To Do,Medium,"java,core-services","auth-service,cms-service,exam-orchestrator,analytics-service"
+1500,Epic,AI Services (FastAPI + gRPC),"# Requirements
+- Services: ASR, Scoring, Correction, Content-gen
+- Each: FastAPI HTTP `/health`, `/metrics`; gRPC server
+- Stubs acceptable for MVP; deterministic scoring for tests
+
+# Acceptance Criteria
+- gRPC RPCs: TranscribeAudio, ScoreAnswer, CorrectText, GenerateSample
+- /health returns 200; /metrics exposes Prometheus metrics
+- OTEL traces emitted for requests",,To Do,Medium,"python,fastapi,grpc","asr-service,scoring-service,correction-service,content-gen-service"
+1600,Epic,Async & Messaging (Workers + Queue),"# Requirements
+- Choose broker: RabbitMQ (recommended MVP) or Redis/Kafka
+- Define topics/queues; implement worker for `score_answer`
+- Retry/backoff; idempotency keys
+
+# Acceptance Criteria
+- Jobs enqueued from exam/gateway; worker consumes and completes
+- Failures retried with backoff; duplicate job id skipped",,To Do,Medium,"async,queue",jobs
+1700,Epic,"Storage (Postgres, Redis, S3/MinIO)","# Requirements
+- Postgres instances + schemas for services
+- Redis for sessions/cache; health checks
+- S3/MinIO bucket `ielts-audio` with presigned PUT/GET
+
+# Acceptance Criteria
+- Migrations run at startup; connections pooled
+- Redis used for session state or rate limits
+- Upload & playback work via presigned URLs",,To Do,Medium,"storage,s3,postgres,redis",storage
+1800,Epic,"Observability (OTEL, Prometheus/Grafana, Jaeger)","# Requirements
+- OTEL Collector; services export traces/metrics
+- Prometheus scrape; Grafana dashboards for gateway RPS & scoring latency
+- Jaeger/Tempo UI for traces; basic alert rules
+
+# Acceptance Criteria
+- Traces show FE→Gateway→Scoring spans
+- Grafana has panels p50/p95 latency; alert on 5xx",,To Do,Medium,"observability,otel,prometheus,grafana,jaeger",observability
+1001,Story,Scaffold Next.js app + Healthcheck,"# Requirements
+- Next.js 14+ App Router (TypeScript strict)
+- `/api/health` route returns 200 JSON
+- Dockerfile multi-stage build
+
+# Steps
+1. Init project: `npx create-next-app@latest --ts`
+2. Add `src/app/api/health/route.ts`:
+```ts
+import { NextResponse } from 'next/server';
+export const GET = () => NextResponse.json({{ status: 'ok' }});
+```
+3. Add scripts: `""build"": ""next build"", ""start"": ""next start""`
+4. Create Dockerfile (multi-stage) and build `docker build -t ielts-frontend:dev .`
+5. Run local: `docker run -p 3000:3000 ielts-frontend:dev`
+
+# Acceptance Criteria
+- GET /api/health → {{ ""status"":""ok"" }}
+- Containerized app starts on port 3000",1000,To Do,High,"frontend,setup",frontend
+10011,Task,ESLint + Prettier + CI lint,"# Requirements
+- ESLint with `eslint-config-next`
+- Prettier formatting; CI job fails on lint errors
+
+# Steps
+1. `npm i -D eslint prettier eslint-config-next`
+2. Create `.eslintrc.json` with Next.js config
+3. Add npm scripts: `""lint"": ""next lint""`
+4. GitHub Action:
+```yaml
+name: lint
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {{ node-version: '20' }}
+      - run: npm ci
+      - run: npm run lint
+```
+
+# Acceptance Criteria
+- CI fails on lint error; passes on clean repo",1001,To Do,Medium,"quality,ci",frontend
+10012,Task,"K8s manifests for FE (namespace, deploy, svc, ingress)","# Requirements
+- Deployment with readiness/liveness probes at `/api/health`
+- Ingress host `ielts.local` (Traefik on k3d) or update to nginx
+
+# Steps
+1. Create `infra/k8s/base/namespace.yaml` for `ielts-frontend`
+2. Create `deployment.yaml` with containerPort 3000 and probes
+3. Create `service.yaml` (port 80 → 3000)
+4. Create `ingress.yaml` host `ielts.local`
+5. Apply: `kubectl apply -k infra/k8s/base`
+
+# Acceptance Criteria
+- Pod Ready; Ingress serving http://ielts.local",1001,To Do,Medium,"k8s,manifests",frontend
+1002,Story,OpenAPI SDK integration & Score page,"# Requirements
+- Generate TS SDK from Gateway OpenAPI
+- Score page calls `/v1/answers/score` and renders 4 bands + overall
+- Loading & error states
+
+# Steps
+1. Generate SDK:
+```bash
+npx @openapitools/openapi-generator-cli generate  -i contracts/openapi/public-gateway.yaml  -g typescript-fetch -o frontend/packages/sdk
+```
+2. Create API client with `NEXT_PUBLIC_API_BASE_URL`
+3. Build Score page UI with skeleton while fetching
+4. Mock gateway response if backend not ready
+
+# Acceptance Criteria
+- Successful call renders 4 band scores; errors toasts displayed",1000,To Do,Medium,"frontend,sdk,score",frontend
+10021,Task,Audio record & S3 upload (presigned),"# Requirements
+- Capture WebM/Opus via MediaRecorder
+- Upload to S3 via presigned PUT URL
+- Playback uploaded audio
+
+# Steps
+1. Implement MediaRecorder start/stop, gather Blob
+2. Request presigned URL from backend signer
+3. PUT Blob to presigned URL; store returned key
+4. Show audio <audio controls src=""{{fileUrl}}"">...</audio>
+
+# Acceptance Criteria
+- A recorded answer is uploaded and can be played back",1002,To Do,Medium,"audio,s3",frontend
+1101,Story,Gateway skeleton + OpenAPI + Resilience,"# Requirements
+- Spring Boot 3; springdoc-openapi; Resilience4j; Micrometer Prometheus
+- Actuator `/health` and `/metrics`
+
+# Steps
+1. Init project (Gradle): web, validation, actuator, micrometer
+2. Add springdoc: `org.springdoc:springdoc-openapi-starter-webmvc-ui`
+3. Add Resilience4j starter and basic config (timeout=2s, retry=1)
+4. Expose `/v3/api-docs` and `/swagger-ui`
+
+# Acceptance Criteria
+- OpenAPI UI loads; metrics scraped",1100,To Do,High,"spring,openapi,resilience",gateway
+1102,Story,POST /v1/answers/score → gRPC scoring-service,"# Requirements
+- REST endpoint validates input (userId, transcript or audioUrl)
+- Call gRPC `ScoreAnswer` with timeout/retry
+- Map timeouts to 504 / model errors to 502
+
+# Steps
+1. Generate gRPC stubs from `scoring.proto`
+2. Configure client channel:
+```
+grpc.client.scoring.address=static://scoring-service:50051
+grpc.client.scoring.negotiationType=plaintext
+```
+3. Implement service call with Resilience4j
+4. Return REST response with 4 bands + overall
+
+# Acceptance Criteria
+- 200 on success; resilient to transient failures",1100,To Do,High,"grpc,rest,scoring",gateway
+1201,Story,Auth: Register/Login (JWT) + Profile,"# Requirements
+- Endpoints: POST /auth/register, POST /auth/login (returns JWT), GET/PUT /users/{id}
+- BCrypt password hashing; JWT HS256 (dev); Postgres with Flyway
+
+# Steps
+1. Create Flyway migration for `users` (id uuid, email unique, password_hash, created_at)
+2. Implement register (hash password) and login (verify → JWT)
+3. Add profile GET/PUT (secured by JWT)
+4. Write unit tests for auth flow
+
+# Acceptance Criteria
+- Login returns JWT; protected profile routes require JWT",1200,To Do,High,"auth,jwt,postgres",auth-service
+1301,Story,CMS: Questions CRUD + seed (Part 1–3),"# Requirements
+- CRUD for questions with fields: id, part, topic, text, version, created_at
+- Seed 30 items (10 per part)
+
+# Steps
+1. Create entity + migration
+2. Implement repository/service/controller with pagination & filter by part/topic
+3. Seed data scripts
+4. Basic admin auth guard
+
+# Acceptance Criteria
+- FE can fetch questions by part; admin can create/update",1200,To Do,High,"cms,questions",cms-service
+1401,Story,Exam: State machine P1/P2/P3 + timers,"# Requirements
+- Start/Resume/Finish; state persisted; events emitted to queue for scoring/correction
+- Optional Redis for live session state
+
+# Steps
+1. Define states: P1, P2, P3, Finished
+2. Implement transitions with timers and time limits
+3. Persist to Postgres; emit event on transition
+4. Provide REST endpoints via gateway
+
+# Acceptance Criteria
+- Session flows across parts; resumes after reconnect",1200,To Do,High,"exam,state-machine",exam-orchestrator
+1601,Story,Analytics: ingest events & basic reports,"# Requirements
+- Ingest FE events (pageView, action) and BE events (score_request)
+- Report: user progress trend (bands over time)
+
+# Steps
+1. Create ingestion endpoint; write to Postgres
+2. Define event schema (userId, eventType, payload, ts)
+3. Implement simple report query
+4. FE progress dashboard consumes this
+
+# Acceptance Criteria
+- Dashboard shows band trend and activity counts",1200,To Do,Medium,"analytics,events",analytics-service
+1501,Story,Scoring-service FastAPI + gRPC (deterministic),"# Requirements
+- HTTP `/health`, `/metrics`; gRPC `ScoreAnswer`
+- Deterministic random (seed by userId or text hash); return 4 bands + overall
+
+# Steps
+1. FastAPI app + uvicorn
+2. Implement `/health` and `/metrics` (prometheus_client)
+3. Implement gRPC service: ScoreAnswer(req) → scores
+4. Add OTEL instrumentation
+
+# Acceptance Criteria
+- gRPC returns consistent bands for same seed; metrics exposed",1500,To Do,High,"fastapi,grpc,scoring",scoring-service
+1502,Story,ASR-service FastAPI + gRPC (stub),"# Requirements
+- `TranscribeAudio(url)` returns transcript placeholder and timestamps
+
+# Steps
+1. FastAPI + gRPC server skeleton
+2. Implement stub returning sample transcript
+3. Add `/health`
+
+# Acceptance Criteria
+- Returns transcript for any valid URL; health ok",1500,To Do,Medium,"fastapi,grpc,asr",asr-service
+1503,Story,Correction-service (text fixes + highlights),"# Requirements
+- `CorrectText(text)` returns suggestions with offsets (start,end,type,message)
+
+# Steps
+1. FastAPI route and/or gRPC method
+2. Simple rules-based corrections (e.g., double spaces, common grammar slips)
+3. Return JSON with highlighted ranges
+
+# Acceptance Criteria
+- FE can render highlighted fixes and messages",1500,To Do,Medium,"fastapi,correction",correction-service
+1602,Story,Worker for `score_answer` (retry/backoff/idempotency),"# Requirements
+- Worker consumes jobs from RabbitMQ/Redis; retries with exponential backoff
+- Idempotent on job key
+
+# Steps
+1. Pick Celery (or arq)
+2. Define queue & message schema
+3. Implement task with retry/backoff; dedupe by job id
+4. Deploy worker as separate Deployment
+
+# Acceptance Criteria
+- Duplicate job IDs processed once; transient failures auto-retry",1600,To Do,Medium,"worker,retry,idempotent",jobs
+1701,Story,Storage: Postgres + Redis + S3/MinIO,"# Requirements
+- Postgres for auth/cms/analytics; Redis for sessions; S3/MinIO bucket for audio
+- Secrets via K8s (External Secrets later)
+
+# Steps
+1. Provision Postgres; create DBs and schemas; add pooling
+2. Deploy Redis; health check + connection
+3. Create S3 bucket `ielts-audio`; IAM/creds for signer
+4. Test presigned PUT/GET from local FE
+
+# Acceptance Criteria
+- All connections healthy; upload/playback works",1700,To Do,High,"postgres,redis,s3",storage
+1801,Story,Observability: OTEL + Grafana dashboards,"# Requirements
+- OTEL Collector deployed; services export traces/metrics
+- Grafana dashboards for gateway RPS, scoring latency; basic alerts
+
+# Steps
+1. Deploy OTEL collector; set `OTEL_EXPORTER_OTLP_ENDPOINT` envs
+2. Configure Prometheus scrape targets
+3. Import dashboard JSON; add panels p50/p95; 5xx alert rule
+4. Validate trace across FE→Gateway→Scoring
+
+# Acceptance Criteria
+- Dashboards visible; traces show spans across services",1800,To Do,Medium,"otel,prometheus,grafana,jaeger",observability
