@@ -1,0 +1,68 @@
+mcp.json
+```json
+{
+  "mcpServers": {
+    "jira": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mcp-devtools/jira"
+      ],
+      "env": {
+        "JIRA_URL": "https://ryanngo.atlassian.net",
+        "JIRA_API_MAIL": "",
+        "JIRA_API_KEY": ""
+      }
+    }
+  }
+}
+```
+
+## **JIRA Ticket Workflow (Updated)**
+
+### 1. **Fetch JIRA Ticket**
+- Get ticket details using `mcp_jira_get_ticket` with the ticket ID
+- Read the description, acceptance criteria, and requirements
+
+### 2. **Create Branch (Correct Format)**
+- **Format**: `ITP-{ID}/{feature-description}`
+- **Examples**:
+  - `ITP-29/add-user-profile-page`
+  - `ITP-30/implement-dashboard-analytics`
+  - `ITP-31/fix-navigation-bug`
+  - `ITP-32/add-dark-mode-support`
+
+### 3. **Implement Features**
+- Follow the ticket description and acceptance criteria
+- Use existing patterns from the codebase
+- Ensure responsive design and accessibility
+- Follow TypeScript and React best practices
+
+### 4. **Commit with Proper Format**
+- **Format**: `[FE][ITP-{ID}] <commit-message>`
+- **Examples**:
+  - `[FE][ITP-29] Add user profile page with settings`
+  - `[FE][ITP-30] Implement dashboard analytics charts`
+  - `[FE][ITP-31] Fix navigation menu responsive issues`
+
+### 5. **Create Detailed PR**
+- **Title**: `[FE][ITP-{ID}] <feature-description>`
+- **Description**: Include comprehensive details:
+  - JIRA ticket reference
+  - Feature breakdown with emojis
+  - Technical implementation details
+  - Files changed (new vs modified)
+  - Testing instructions
+  - Screenshots or visual descriptions
+  - Related information (JIRA, type, priority)
+
+## **Key Requirements Remembered:**
+
+- **Branch naming**: Use forward slashes (`ITP-28/develop-score-page`) not hyphens
+- **Frontend focus**: All tickets are frontend-related, so use `[FE]` prefix
+- **Detailed PRs**: Always include comprehensive descriptions for better review
+- **Testing**: Include testing instructions in PR description
+- **Responsive design**: Ensure mobile-first approach
+- **TypeScript**: Use strict typing throughout
+
+Perfect! The workflow is now streamlined and focused on the essential steps for implementing JIRA tickets. 🚀
