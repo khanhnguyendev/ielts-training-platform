@@ -19,6 +19,9 @@ export default function HomeClient() {
         <li>
           <a href="/score">/score</a>
         </li>
+        <li>
+          <a href="/audio">/audio</a>
+        </li>
       </ul>
 
       <h2 style={{ marginTop: 24 }}>React Query demo</h2>
