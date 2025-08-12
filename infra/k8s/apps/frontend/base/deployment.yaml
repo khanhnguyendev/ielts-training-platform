@@ -3,24 +3,85 @@ kind: Deployment
 metadata:
   name: ielts-frontend
   namespace: ielts-frontend
-  labels: { app: ielts-frontend }
+  labels: 
+    app: ielts-frontend
+    version: v1
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
-    matchLabels: { app: ielts-frontend }
+    matchLabels: 
+      app: ielts-frontend
   template:
     metadata:
-      labels: { app: ielts-frontend }
+      labels: 
+        app: ielts-frontend
+        version: v1
     spec:
       containers:
       - name: web
         image: your-dockerhub-user/ielts-frontend:dev-001
-        ports: [ { containerPort: 3000 } ]
+        ports: 
+          - name: http
+            containerPort: 3000
+            protocol: TCP
+        env:
+          - name: NODE_ENV
+            value: "production"
+          - name: APP_VERSION
+            value: "dev-001"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
         readinessProbe:
-          httpGet: { path: /api/health, port: 3000 }
-          initialDelaySeconds: 5
-          periodSeconds: 10
+          httpGet:
+            path: /api/health
+            port: 3000
+            httpHeaders:
+              - name: User-Agent
+                value: kube-probe/1.0
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
         livenessProbe:
-          httpGet: { path: /api/health, port: 3000 }
-          initialDelaySeconds: 15
-          periodSeconds: 20
+          httpGet:
+            path: /api/healthz
+            port: 3000
+            httpHeaders:
+              - name: User-Agent
+                value: kube-probe/1.0
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+            httpHeaders:
+              - name: User-Agent
+                value: kube-probe/1.0
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 30
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+              - ALL
