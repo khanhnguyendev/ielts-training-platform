@@ -3,7 +3,7 @@ package com.ryan.ieltsplatform.service;
 import com.ryan.ieltsplatform.constant.MessageConstants;
 import org.springframework.stereotype.Service;
 
-import java.text.MessageFormat;
+import java.util.Locale;
 
 /**
  * Service for managing and formatting API messages.
@@ -13,14 +13,14 @@ import java.text.MessageFormat;
 public class MessageService {
 
     /**
-     * Format a message with parameters using MessageFormat.
+     * Format a message with parameters using String.format.
      * 
      * @param pattern The message pattern with placeholders
      * @param arguments The arguments to substitute
      * @return Formatted message
      */
     public String formatMessage(String pattern, Object... arguments) {
-        return MessageFormat.format(pattern, arguments);
+        return String.format(Locale.ENGLISH, pattern, arguments);
     }
 
     /**

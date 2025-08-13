@@ -1,5 +1,6 @@
 package com.ryan.ieltsplatform.controller;
 
+import com.ryan.ieltsplatform.constant.ApiEndpoints;
 import com.ryan.ieltsplatform.constant.MessageConstants;
 import com.ryan.ieltsplatform.dto.ApiResponse;
 import com.ryan.ieltsplatform.exception.BusinessException;
@@ -25,7 +26,7 @@ import java.util.Map;
  * This controller will be removed in production and replaced with actual business endpoints.
  */
 @RestController
-@RequestMapping("/api/hello")
+@RequestMapping(ApiEndpoints.Hello.BASE)
 @Tag(name = "Hello", description = "Sample API endpoints for demonstration")
 @Slf4j
 public class HelloController {
@@ -50,7 +51,7 @@ public class HelloController {
             description = "Successful response",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = com.ryan.ieltsplatform.dto.ApiResponse.class),
+                schema = @Schema(implementation = ApiResponse.class),
                 examples = @ExampleObject(
                     value = """
                     {
@@ -67,7 +68,7 @@ public class HelloController {
             )
         )
     })
-    public ResponseEntity<com.ryan.ieltsplatform.dto.ApiResponse<Map<String, String>>> hello() {
+    public ResponseEntity<ApiResponse<Map<String, String>>> hello() {
         String correlationId = CorrelationIdUtil.initializeCorrelationId();
         
         Map<String, String> data = new HashMap<>();
@@ -76,7 +77,7 @@ public class HelloController {
         
         log.info("Hello endpoint called - CorrelationId: {}", correlationId);
         
-        return ResponseEntity.ok(com.ryan.ieltsplatform.dto.ApiResponse.success(data));
+        return ResponseEntity.ok(ApiResponse.success(data));
     }
 
     /**
@@ -93,7 +94,7 @@ public class HelloController {
             description = "Successful response",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = com.ryan.ieltsplatform.dto.ApiResponse.class)
+                schema = @Schema(implementation = ApiResponse.class)
             )
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -101,11 +102,11 @@ public class HelloController {
             description = "Bad request - invalid name",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = com.ryan.ieltsplatform.dto.ApiResponse.class)
+                schema = @Schema(implementation = ApiResponse.class)
             )
         )
     })
-    public ResponseEntity<com.ryan.ieltsplatform.dto.ApiResponse<Map<String, String>>> helloWithName(
+    public ResponseEntity<ApiResponse<Map<String, String>>> helloWithName(
             @Parameter(description = "Name to greet", example = "Ryan")
             @PathVariable String name) {
         
@@ -127,7 +128,7 @@ public class HelloController {
         
         log.info("Hello endpoint called with name: {} - CorrelationId: {}", name, correlationId);
         
-        return ResponseEntity.ok(com.ryan.ieltsplatform.dto.ApiResponse.success(data));
+        return ResponseEntity.ok(ApiResponse.success(data));
     }
 
     /**
@@ -144,11 +145,11 @@ public class HelloController {
             description = "Business error",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = com.ryan.ieltsplatform.dto.ApiResponse.class)
+                schema = @Schema(implementation = ApiResponse.class)
             )
         )
     })
-    public ResponseEntity<com.ryan.ieltsplatform.dto.ApiResponse<Void>> demonstrateBusinessError() {
+    public ResponseEntity<ApiResponse<Void>> demonstrateBusinessError() {
         String correlationId = CorrelationIdUtil.initializeCorrelationId();
         
         log.warn("Business error demonstration requested - CorrelationId: {}", correlationId);
@@ -170,11 +171,11 @@ public class HelloController {
             description = "Validation error",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = com.ryan.ieltsplatform.dto.ApiResponse.class)
+                schema = @Schema(implementation = ApiResponse.class)
             )
         )
     })
-    public ResponseEntity<com.ryan.ieltsplatform.dto.ApiResponse<Void>> demonstrateValidationError() {
+    public ResponseEntity<ApiResponse<Void>> demonstrateValidationError() {
         String correlationId = CorrelationIdUtil.initializeCorrelationId();
         
         log.warn("Validation error demonstration requested - CorrelationId: {}", correlationId);
@@ -196,11 +197,11 @@ public class HelloController {
             description = "Internal server error",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = com.ryan.ieltsplatform.dto.ApiResponse.class)
+                schema = @Schema(implementation = ApiResponse.class)
             )
         )
     })
-    public ResponseEntity<com.ryan.ieltsplatform.dto.ApiResponse<Void>> demonstrateRuntimeError() {
+    public ResponseEntity<ApiResponse<Void>> demonstrateRuntimeError() {
         String correlationId = CorrelationIdUtil.initializeCorrelationId();
         
         log.error("Runtime error demonstration requested - CorrelationId: {}", correlationId);

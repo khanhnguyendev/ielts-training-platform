@@ -1,10 +1,13 @@
 package com.ryan.ieltsplatform.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ryan.ieltsplatform.constant.ApiEndpoints;
 import com.ryan.ieltsplatform.dto.ApiResponse;
+import com.ryan.ieltsplatform.service.MessageService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -14,6 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(HelloController.class)
+@Import(MessageService.class)
 class HelloControllerTest {
 
     @Autowired
@@ -24,7 +28,7 @@ class HelloControllerTest {
 
     @Test
     void hello_ShouldReturnSuccessResponse() throws Exception {
-        mockMvc.perform(get("/api/hello")
+        mockMvc.perform(get(ApiEndpoints.Hello.GREET)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -39,19 +43,19 @@ class HelloControllerTest {
     void helloWithName_ShouldReturnPersonalizedMessage() throws Exception {
         String name = "Ryan";
         
-        mockMvc.perform(get("/api/hello/{name}", name)
+        mockMvc.perform(get(ApiEndpoints.buildEndpoint(ApiEndpoints.Hello.GREET_WITH_NAME, name))
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.message").value("Hello, " + name + "! Welcome to IELTS Platform Backend!"))
+                .andExpect(jsonPath("$.data.message").value("Hello, Ryan! Welcome to IELTS Platform Backend!"))
                 .andExpect(jsonPath("$.data.correlationId").exists())
                 .andExpect(jsonPath("$.data.greetedName").value(name));
     }
 
     @Test
     void helloWithEmptyName_ShouldReturnValidationError() throws Exception {
-        mockMvc.perform(get("/api/hello/ ")
+        mockMvc.perform(get(ApiEndpoints.buildEndpoint(ApiEndpoints.Hello.GREET_WITH_NAME, " "))
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -64,7 +68,7 @@ class HelloControllerTest {
     void helloWithLongName_ShouldReturnValidationError() throws Exception {
         String longName = "A".repeat(51);
         
-        mockMvc.perform(get("/api/hello/{name}", longName)
+        mockMvc.perform(get(ApiEndpoints.buildEndpoint(ApiEndpoints.Hello.GREET_WITH_NAME, longName))
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -75,7 +79,7 @@ class HelloControllerTest {
 
     @Test
     void demonstrateBusinessError_ShouldReturnBusinessError() throws Exception {
-        mockMvc.perform(get("/api/hello/error/business")
+        mockMvc.perform(get(ApiEndpoints.Hello.BUSINESS_ERROR)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -86,7 +90,7 @@ class HelloControllerTest {
 
     @Test
     void demonstrateValidationError_ShouldReturnValidationError() throws Exception {
-        mockMvc.perform(get("/api/hello/error/validation")
+        mockMvc.perform(get(ApiEndpoints.Hello.VALIDATION_ERROR)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -97,7 +101,7 @@ class HelloControllerTest {
 
     @Test
     void demonstrateRuntimeError_ShouldReturnInternalServerError() throws Exception {
-        mockMvc.perform(get("/api/hello/error/runtime")
+        mockMvc.perform(get(ApiEndpoints.Hello.RUNTIME_ERROR)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
