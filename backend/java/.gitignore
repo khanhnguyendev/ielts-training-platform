@@ -44,3 +44,4 @@ Thumbs.db
 src/main/proto/generated/
 src/main/proto/*.java
 src/main/proto/*.grpc.java
+logs/
