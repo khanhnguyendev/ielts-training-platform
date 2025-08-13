@@ -2,6 +2,7 @@ package com.ryan.ieltsplatform.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ryan.ieltsplatform.constant.MessageConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -56,7 +57,7 @@ public class ApiResponse<T> {
 
     // Static factory methods for success responses
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>("success", data, "Operation completed successfully");
+        return new ApiResponse<>("success", data, MessageConstants.Success.OPERATION_COMPLETED);
     }
 
     public static <T> ApiResponse<T> success(T data, String message) {

@@ -1,6 +1,8 @@
 package com.ryan.ieltsplatform.exception;
 
+import com.ryan.ieltsplatform.constant.MessageConstants;
 import com.ryan.ieltsplatform.dto.ApiResponse;
+import com.ryan.ieltsplatform.service.MessageService;
 import com.ryan.ieltsplatform.util.CorrelationIdUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private final MessageService messageService;
+
+    public GlobalExceptionHandler(MessageService messageService) {
+        this.messageService = messageService;
+    }
+
     /**
      * Handle validation exceptions from @Valid annotations.
      */
@@ -39,7 +47,7 @@ public class GlobalExceptionHandler {
                         Collectors.mapping(FieldError::getDefaultMessage, Collectors.toList())
                 ));
 
-        String errorMessage = "Validation failed for " + fieldErrors.size() + " field(s)";
+        String errorMessage = messageService.getValidationFailedMessage(fieldErrors.size());
         
         Map<String, Object> errorDetails = new HashMap<>();
         errorDetails.put("fieldErrors", fieldErrors);
@@ -48,7 +56,7 @@ public class GlobalExceptionHandler {
         log.warn("Validation error: {} - Fields: {} - CorrelationId: {}", 
                 errorMessage, fieldErrors.keySet(), CorrelationIdUtil.getCurrentCorrelationId());
 
-        ApiResponse<Map<String, Object>> response = ApiResponse.error(errorMessage, "VALIDATION_ERROR");
+        ApiResponse<Map<String, Object>> response = ApiResponse.error(errorMessage, MessageConstants.ErrorCode.VALIDATION_ERROR);
         response.setData(errorDetails);
         
         return ResponseEntity.badRequest().body(response);
@@ -101,7 +109,7 @@ public class GlobalExceptionHandler {
         log.error("Runtime error: {} - CorrelationId: {}", 
                 ex.getMessage(), CorrelationIdUtil.getCurrentCorrelationId(), ex);
 
-        ApiResponse<Void> response = ApiResponse.error("An unexpected error occurred", "INTERNAL_ERROR");
+        ApiResponse<Void> response = ApiResponse.error(MessageConstants.Error.UNEXPECTED_ERROR, MessageConstants.ErrorCode.INTERNAL_ERROR);
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
@@ -116,7 +124,7 @@ public class GlobalExceptionHandler {
         log.error("Generic error: {} - CorrelationId: {}", 
                 ex.getMessage(), CorrelationIdUtil.getCurrentCorrelationId(), ex);
 
-        ApiResponse<Void> response = ApiResponse.error("An unexpected error occurred", "INTERNAL_ERROR");
+        ApiResponse<Void> response = ApiResponse.error(MessageConstants.Error.UNEXPECTED_ERROR, MessageConstants.ErrorCode.INTERNAL_ERROR);
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }

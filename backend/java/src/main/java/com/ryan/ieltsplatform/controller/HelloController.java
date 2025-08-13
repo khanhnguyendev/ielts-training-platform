@@ -1,8 +1,10 @@
 package com.ryan.ieltsplatform.controller;
 
+import com.ryan.ieltsplatform.constant.MessageConstants;
 import com.ryan.ieltsplatform.dto.ApiResponse;
 import com.ryan.ieltsplatform.exception.BusinessException;
 import com.ryan.ieltsplatform.exception.ValidationException;
+import com.ryan.ieltsplatform.service.MessageService;
 import com.ryan.ieltsplatform.util.CorrelationIdUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,6 +29,12 @@ import java.util.Map;
 @Tag(name = "Hello", description = "Sample API endpoints for demonstration")
 @Slf4j
 public class HelloController {
+
+    private final MessageService messageService;
+
+    public HelloController(MessageService messageService) {
+        this.messageService = messageService;
+    }
 
     /**
      * Simple hello endpoint that returns a success response.
@@ -63,7 +71,7 @@ public class HelloController {
         String correlationId = CorrelationIdUtil.initializeCorrelationId();
         
         Map<String, String> data = new HashMap<>();
-        data.put("message", "Hello from IELTS Platform Backend!");
+        data.put("message", MessageConstants.Success.HELLO_MESSAGE);
         data.put("correlationId", correlationId);
         
         log.info("Hello endpoint called - CorrelationId: {}", correlationId);
@@ -105,15 +113,15 @@ public class HelloController {
         
         // Validate name parameter
         if (name == null || name.trim().isEmpty()) {
-            throw new ValidationException("Name cannot be empty", "EMPTY_NAME");
+            throw new ValidationException(MessageConstants.Error.NAME_EMPTY, MessageConstants.ErrorCode.EMPTY_NAME);
         }
         
-        if (name.length() > 50) {
-            throw new ValidationException("Name cannot exceed 50 characters", "NAME_TOO_LONG");
+        if (name.length() > MessageConstants.Validation.MAX_NAME_LENGTH) {
+            throw new ValidationException(messageService.getNameTooLongMessage(), MessageConstants.ErrorCode.NAME_TOO_LONG);
         }
         
         Map<String, String> data = new HashMap<>();
-        data.put("message", "Hello, " + name + "! Welcome to IELTS Platform Backend!");
+        data.put("message", messageService.getPersonalizedHelloMessage(name));
         data.put("correlationId", correlationId);
         data.put("greetedName", name);
         
@@ -145,7 +153,7 @@ public class HelloController {
         
         log.warn("Business error demonstration requested - CorrelationId: {}", correlationId);
         
-        throw new BusinessException("This is a demonstration of business exception handling", "DEMO_ERROR");
+        throw new BusinessException("This is a demonstration of business exception handling", MessageConstants.ErrorCode.DEMO_ERROR);
     }
 
     /**
@@ -171,7 +179,7 @@ public class HelloController {
         
         log.warn("Validation error demonstration requested - CorrelationId: {}", correlationId);
         
-        throw new ValidationException("This is a demonstration of validation exception handling", "DEMO_VALIDATION_ERROR");
+        throw new ValidationException("This is a demonstration of validation exception handling", MessageConstants.ErrorCode.DEMO_VALIDATION_ERROR);
     }
 
     /**
